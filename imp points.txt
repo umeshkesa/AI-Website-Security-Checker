@@ -1,0 +1,197 @@
+1.create virtual env
+python -m venv venv
+venv\Scripts\activate
+
+Uvicorn is a lightning-fast ASGI (Asynchronous Server Gateway Interface) server for Python, designed to handle incoming HTTP and WebSocket requests concurrently using asynchronous I/O. It acts as the "engine" that receives network requests from clients (browsers/APIs) and passes them to asynchronous frameworks like FastAPI or Starlette. 
+Key Details About Uvicorn Requests:
+Asynchronous Handling: Uvicorn uses uvloop to efficiently process multiple, non-blocking requests, making it highly responsive under high traffic.
+Request Pipeline: It listens on a socket, receives HTTP requests, processes them, and hands them off to the application.
+Performance: Designed for high-speed performance, Uvicorn handles thousands of concurrent connections.
+Worker Processes: Supports running multiple workers to distribute load across CPU cores for improved performance.
+Functionality: It supports HTTP/1.1 and WebSockets, manages keep-alive timeouts (5 seconds), and adds Server/Date headers to responses. 
+How to Start Uvicorn:
+uvicorn main:app --reload (runs with automatic code reload).
+uvicorn main:app --workers 4 (runs with 4 worker processes). 
+
+
+FastAPI is a modern, high-performance web framework for building APIs with Python 3.8+. It is designed to be easy to use, fast to code, and production-ready. 
+Core Features
+Speed: It is one of the fastest Python frameworks available, with performance comparable to NodeJS and Go.
+Automatic Documentation: It automatically generates interactive API documentation (using Swagger UI and ReDoc) so you can test endpoints directly in your browser.
+Data Validation: Using Pydantic and Python type hints, it automatically validates incoming data and provides clear error messages if something is wrong.
+Asynchronous Support: It natively supports async and await, allowing it to handle many concurrent connections efficiently.
+Standard-Based: It is fully compatible with open API standards like OpenAPI and JSON Schema. 
+Key Components
+FastAPI doesn't work alone; it stands on the shoulders of two major libraries: 
+Starlette: Handles the web parts (routing, webhooks, etc.).
+Pydantic: Handles the data parts (validation and serialization). 
+Comparison at a Glance
+Feature 	FastAPI	Flask	Django
+Type	Async Microframework	Sync Microframework	Full-stack Framework
+Speed	Very Fast	Fast	Moderate
+Documentation	Automatic	Manual/Plugins	Manual/Plugins
+Best For	APIs, Microservices, AI	Prototypes, small apps	Large, complex apps
+
+
+| File                  | Responsibility                       |
+| --------------------- | ------------------------------------ |
+| `ssl_service.py`      | SSL/TLS checks                       |
+| `header_service.py`   | Security header analysis             |
+| `tech_service.py`     | CMS / server detection               |
+| `severity_service.py` | Critical / High / Medium / Low logic |
+
+
+
+
+Step-by-Step (What Actually Happens)
+1️⃣ URL is Given by User
+
+Example:
+
+https://example.com
+
+2️⃣ TCP Connection to the Server
+socket.create_connection((hostname, 443))
+
+
+Connects to the website’s server on port 443
+
+Same as a browser opening the site
+
+3️⃣ TLS Handshake Starts
+ssl.create_default_context()
+context.wrap_socket(...)
+
+
+Initiates a TLS handshake
+
+Server sends its X.509 SSL certificate
+
+4️⃣ Certificate is Read
+cert = ssock.getpeercert()
+
+
+From this certificate, we extract:
+
+Issuer (CA)
+
+Expiry date
+
+Certificate validity
+
+TLS version (TLS 1.2 / 1.3)
+
+This is publicly shared information.
+
+
+
+
+header_service.py
+
+Sends an HTTP request to the website
+
+Reads HTTP response headers
+
+Checks if important security headers are missing
+
+Returns:
+
+Missing headers
+
+Severity
+
+Fix recommendations
+
+
+
+
+1️⃣ Inputs to severity_service
+
+This service does not scan websites.
+
+It receives results from other services, like:
+
+ssl_service
+
+header_service
+
+tech_service
+
+Example input:
+
+[
+  {"service": "SSL", "severity": "Low", "issue": None},
+  {"service": "Headers", "severity": "Medium", "issue": "Missing headers"},
+  {"service": "Tech", "severity": "Medium", "issue": "Technology exposed"}
+]
+
+2️⃣ Severity Ranking Logic
+
+Internally, we convert severity words → numbers:
+
+Severity	Rank
+Low	1
+Medium	2
+High	3
+Critical	4
+
+This allows:
+
+Comparison
+
+Aggregation
+
+Scoring
+
+3️⃣ Overall Severity Calculation
+
+The service:
+
+Iterates through all findings
+
+Picks the highest severity
+
+Example:
+
+Low + Medium + Medium → Overall = Medium
+
+
+This matches real-world security reporting.
+
+4️⃣ Risk Score Calculation
+
+Each severity adds to a numeric risk score:
+
+Example:
+
+Low (1) + Medium (2) + Medium (2) = Risk Score = 5
+
+
+This score:
+
+Helps rank websites
+
+Can be shown on dashboard
+
+Easy to explain to non-technical users
+
+5️⃣ Structured Output Is Returned
+
+Final output is clean JSON, not text:
+
+{
+  "overall_severity": "Medium",
+  "risk_score": 5,
+  "findings": [
+    {
+      "service": "SSL",
+      "severity": "Low",
+      "issue": null
+    },
+    {
+      "service": "Headers",
+      "severity": "Medium",
+      "issue": "Missing security headers"
+    }
+  ]
+}
