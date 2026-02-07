@@ -25,7 +25,7 @@ ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 # CORS
 # =========================
 ALLOWED_ORIGINS = os.getenv(
-    "ALLOWED_ORIGINS", "http://localhost:3000"
+    "ALLOWED_ORIGINS"," http://localhost:5173/"
 ).split(",")
 
 # =========================
