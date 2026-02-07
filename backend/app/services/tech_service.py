@@ -63,72 +63,65 @@ def detect_technology(url: str) -> dict:
         result["detection_methods_used"] = detection_result["detection_summary"]["methods_used"]
         result["cloudflare_detected"] = detection_result["cloudflare_detected"]
 
-        # ---------------- NVD FALLBACK LOGIC ----------------
+        # ---------------- NVD FALLBACK (SANITIZED) ----------------
         for tech_name, tech in result["technologies"].items():
-          if not tech.get("version"):
             nvd_info = nvd_fallback_by_product(tech_name)
 
-        # Case 1: NVD data available → Potential risk
-            if nvd_info.get("status") == "ok" and nvd_info.get("affected_versions"):
-             result["vulnerabilities"].append({
-                "technology": tech_name,
-                "confidence": "Potential",
-                "message": (
-                    f"NVD reports historical vulnerabilities affecting {tech_name} "
-                    f"up to versions {', '.join(nvd_info['affected_versions'][:3])}. "
-                    "If your deployed version is lower than these, it may be vulnerable."
-                ),
-                "recommendation": (
-                    f"Verify the {tech_name} version in use and update "
-                    "to the latest secure release if outdated."
-                ),
-                "reference_cves": nvd_info.get("cves", [])
-            })
+            # Potential risk
+            if nvd_info.get("status") == "potential":
+                result["vulnerabilities"].append({
+                    "technology": tech_name,
+                    "confidence": "Potential",
+                    "affected_versions": nvd_info.get("affected_versions", []),
+                    "reference_cves": nvd_info.get("cves", []),
+                    "message": (
+                        f"Historical vulnerabilities exist for {tech_name}. "
+                        "Verify the deployed version."
+                    ),
+                    "recommendation": (
+                        f"Verify the {tech_name} version and update "
+                        "to the latest secure release if outdated."
+                    )
+                })
 
-        # Case 2: NVD unavailable → Informational
-            elif nvd_info.get("status") == "unavailable":
-              result["vulnerabilities"].append({
-                "technology": tech_name,
-                "confidence": "Informational",
-                "message": (
-                    f"Unable to retrieve vulnerability data for {tech_name} "
-                    "from NVD. Version information is not exposed."
-                ),
-                "recommendation": (
-                    f"Manually verify the {tech_name} version and "
-                    "monitor official security advisories."
-                ),
-                "reference_cves": []
-            })
+            # Informational (default & safe)
+            else:
+                result["vulnerabilities"].append({
+                    "technology": tech_name,
+                    "confidence": "Informational",
+                    "message": "No confirmed CVEs available from public databases.",
+                    "recommendation": "No immediate action required."
+                })
 
         # ---------------- RECOMMENDATIONS ----------------
         for vuln in result["vulnerabilities"][:5]:
-            result["recommendations"].append(vuln["recommendation"])
+            if vuln.get("recommendation"):
+                result["recommendations"].append(vuln["recommendation"])
 
         if result["cloudflare_detected"]:
             result["recommendations"].append(
-                "Cloudflare CDN detected - verify origin server IP is not exposed"
+                "Cloudflare CDN detected – verify origin server IP is not exposed."
             )
 
         if result["total_count"] > 15:
             result["recommendations"].append(
-                f"{result['total_count']} technologies detected - review for unnecessary dependencies"
+                f"{result['total_count']} technologies detected – review unnecessary dependencies."
             )
 
         # Severity adjustment
-        if result["vulnerabilities"]:
+        if any(v["confidence"] == "Potential" for v in result["vulnerabilities"]):
             result["severity"] = "Medium"
 
     except requests.exceptions.Timeout:
         result["issue"] = "Technology detection timed out"
         result["severity"] = "Medium"
 
-    except requests.exceptions.RequestException as e:
-        result["issue"] = f"Failed to fetch website: {str(e)}"
+    except requests.exceptions.RequestException:
+        result["issue"] = "Failed to fetch website"
         result["severity"] = "Medium"
 
-    except Exception as e:
-        result["issue"] = f"Technology detection failed: {str(e)}"
+    except Exception:
+        result["issue"] = "Technology detection failed"
         result["severity"] = "Medium"
 
     return result

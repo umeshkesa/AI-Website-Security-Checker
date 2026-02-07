@@ -8,6 +8,8 @@ from app.services.severity_service import calculate_overall_severity
 from app.services.vulnerability_service import VulnerabilityService
 from app.services.ai_risk_service import AIRiskService
 from app.services.ai_explanation_service import AIExplanationService
+from app.services.ai_owasp_service import AIOWASPService
+    
 
 
 def run_all_scans(url: str) -> dict:
@@ -102,6 +104,23 @@ def run_all_scans(url: str) -> dict:
     )
     overall["ai"] = ai_adjustment
 
+
+    
+    owasp_service = AIOWASPService()
+    owasp_mapping = owasp_service.map_to_owasp({
+        "url": url,
+        "ssl": ssl_result,
+        "headers": headers_result,
+        "technology": technology_result,
+        "vulnerabilities": vulnerabilities,
+        "overall": overall
+    })
+    
+    for i, vuln_group in enumerate(vulnerabilities):
+        tech_name = vuln_group["technology"]
+        if tech_name in ai_analysis["vulnerability_explanations"]:
+            vulnerabilities[i]["ai_insights"] = ai_analysis["vulnerability_explanations"][tech_name]
+    
     # 6️⃣ Unified scan report
     return {
         "url": url,
@@ -111,5 +130,6 @@ def run_all_scans(url: str) -> dict:
         "technology": technology_result,
         "vulnerabilities": vulnerabilities,
         "overall": overall,
+        "owasp": owasp_mapping 
     }
 
