@@ -7,6 +7,12 @@ logger = logging.getLogger(__name__)
 
 NVD_API_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0"
 
+SKIP_NVD_PRODUCTS = {
+    "Google Analytics",
+    "Google Tag Manager",
+    "Google Font API",
+    "Cloudflare",
+}
 
 @lru_cache(maxsize=100)
 def nvd_fallback_by_product(product_name: str, max_results: int = 5):
@@ -18,13 +24,13 @@ def nvd_fallback_by_product(product_name: str, max_results: int = 5):
         response = requests.get(
             NVD_API_URL,
             params={
-                "keywordSearch": product_name,
+                "keywordSearch": product_name.replace(" ", "+"),
                 "resultsPerPage": max_results
             },
             headers=headers,
             timeout=10
         )
-
+        
         # 🚫 Never expose HTTP failure
         if response.status_code != 200:
             logger.info(f"NVD unavailable for {product_name}")
@@ -35,7 +41,12 @@ def nvd_fallback_by_product(product_name: str, max_results: int = 5):
 
         data = response.json()
         vulns = data.get("vulnerabilities", [])
-
+        
+        if product_name in SKIP_NVD_PRODUCTS:
+         return {
+             "status": "informational",
+             "message": "Vulnerability scanning not applicable for this technology."
+         }
         # ✅ Valid response but no CVEs
         if not vulns:
             return {

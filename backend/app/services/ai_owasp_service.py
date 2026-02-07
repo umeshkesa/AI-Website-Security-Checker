@@ -14,7 +14,12 @@ class AIOWASPService:
         """
         Maps scan findings to OWASP Top 10 (2021) using AI reasoning
         """
-
+        reduced_scan = {
+    "ssl": scan_results.get("ssl"),
+    "headers": scan_results.get("headers"),
+    "technology_vulnerabilities": scan_results.get("technology", {}).get("vulnerabilities", []),
+    "overall": scan_results.get("overall"),
+      }
         prompt = f"""
 You are a cybersecurity expert.
 
@@ -28,7 +33,7 @@ Rules:
 - Keep explanations concise and professional
 
 Scan Results:
-{scan_results}
+{reduced_scan}
 
 Return STRICT JSON in the following format:
 {{
@@ -56,6 +61,11 @@ Return STRICT JSON in the following format:
             ai_raw = self.ai_client.generate(prompt)
 
             try:
+                ai_raw = ai_raw.strip()
+                if ai_raw.startswith("```json"):
+                    ai_raw = ai_raw[7:-3].strip()
+                elif ai_raw.startswith("```"):
+                    ai_raw = ai_raw[3:-3].strip()  
                 ai_response = json.loads(ai_raw)
             except Exception:
                 logger.error("OWASP AI returned invalid JSON")

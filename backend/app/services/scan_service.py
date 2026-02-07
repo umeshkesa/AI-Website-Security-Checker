@@ -116,10 +116,10 @@ def run_all_scans(url: str) -> dict:
         "overall": overall
     })
     
-    for i, vuln_group in enumerate(vulnerabilities):
-        tech_name = vuln_group["technology"]
-        if tech_name in ai_analysis["vulnerability_explanations"]:
-            vulnerabilities[i]["ai_insights"] = ai_analysis["vulnerability_explanations"][tech_name]
+    # for i, vuln_group in enumerate(vulnerabilities):
+    #     tech_name = vuln_group["technology"]
+    #     if tech_name in ai_analysis["vulnerability_explanations"]:
+    #         vulnerabilities[i]["ai_insights"] = ai_analysis["vulnerability_explanations"][tech_name]
     
     # 6️⃣ Unified scan report
     return {

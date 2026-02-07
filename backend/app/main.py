@@ -95,54 +95,6 @@ async def health():
     }
 
 
-# @app.post("/api/scan")
-# @limiter.limit("5/minute")
-# async def scan_website(request: Request, scan_request: ScanRequest):
-#     """
-#     Main scan endpoint
-#     """
-
-#     url = scan_request.url
-#     logger.info(f"Received scan request for: {url}")
-
-#     try:
-#         # --- Run services ---
-#         ssl_result = check_ssl(url)
-#         headers_result = check_security_headers(url)
-#         tech_result = detect_technology(url)
-
-#         # --- Severity aggregation ---
-#         overall_result = calculate_overall_severity(
-#             [ssl_result, headers_result, tech_result]
-#         )
-
-#         response = {
-#             "url": url,
-#             "timestamp": datetime.now(timezone.utc).isoformat(),
-#             "ssl": ssl_result,
-#             "headers": headers_result,
-#             "technology": tech_result,
-#             "overall": overall_result
-#         }
-
-#         logger.info(
-#             f"Scan complete for {url} | "
-#             f"Overall Severity: {overall_result['overall_severity']}"
-#         )
-#         if AI_RECOMMENDATIONS_ENABLED:
-#          try:
-#            response["ai_recommendations"] = generate_ai_recommendations(response)
-#          except Exception as e:
-#            response["ai_recommendations"] = {
-#             "status": "unavailable",
-#             "reason": str(e)
-#         }
-
-#         return response
-
-    # except Exception as e:
-    #     logger.error(f"Scan failed for {url}: {str(e)}")
-    #     raise HTTPException(status_code=500, detail="Scan failed")
 
 
 # ---------------- Local / Prod Run ----------------

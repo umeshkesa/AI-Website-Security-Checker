@@ -85,10 +85,10 @@ def detect_technology(url: str) -> dict:
                 })
 
             # Informational (default & safe)
-            else:
-                result["vulnerabilities"].append({
+            if nvd_info.get("status") == "potential":
+                 result["vulnerabilities"].append({
                     "technology": tech_name,
-                    "confidence": "Informational",
+                    "confidence": "potential",
                     "message": "No confirmed CVEs available from public databases.",
                     "recommendation": "No immediate action required."
                 })
