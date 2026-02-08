@@ -10,7 +10,7 @@ Performance: Designed for high-speed performance, Uvicorn handles thousands of c
 Worker Processes: Supports running multiple workers to distribute load across CPU cores for improved performance.
 Functionality: It supports HTTP/1.1 and WebSockets, manages keep-alive timeouts (5 seconds), and adds Server/Date headers to responses. 
 How to Start Uvicorn:
-uvicorn main:app --reload (runs with automatic code reload).
+uvicorn app.main:app --reload (runs with automatic code reload).
 uvicorn main:app --workers 4 (runs with 4 worker processes). 
 
 
