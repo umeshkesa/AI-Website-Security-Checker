@@ -1,19 +1,37 @@
 import { useState } from 'react';
 import { Search, Loader2, ShieldAlert } from 'lucide-react';
+import { scanWebsite } from "../services/api";
 
 export function Scanner() {
   const [url, setUrl] = useState('');
   const [isScanning, setIsScanning] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleScan = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!url) return;
 
+    if (!url) {
+      setError("Please enter a URL");
+      return;
+    }
+
+    setError("");
     setIsScanning(true);
-    setTimeout(() => {
+    setLoading(true);
+
+    try {
+      const data = await scanWebsite(url); // 🔥 BACKEND CALL
+      setResult(data);
+    } catch (err) {
+      setError("Scan failed. Backend not reachable.");
+    } finally {
       setIsScanning(false);
-    }, 2000);
+      setLoading(false);
+    }
   };
+
 
   return (
     <section className="py-32 bg-cream">
@@ -59,6 +77,17 @@ export function Scanner() {
               </button>
             </div>
           </form>
+
+          {result && (
+            <div className="mt-10 bg-cream-light p-6 rounded-2xl border border-brown/10">
+              <h3 className="text-xl font-bold text-brown mb-4">
+                Scan Result
+              </h3>
+              <pre className="text-sm text-brown/80 overflow-auto max-h-96">
+                {JSON.stringify(result, null, 2)}
+              </pre>
+            </div>
+          )}
 
           <div className="mt-8 p-6 bg-cream-light rounded-2xl border border-brown/10">
             <div className="flex items-start gap-4">

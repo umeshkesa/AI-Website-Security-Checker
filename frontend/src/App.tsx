@@ -1,43 +1,23 @@
-import { useState } from "react";
-import { scanWebsite } from "./services/api";
+
+
+import { Header } from './components/Header'
+import { Hero } from './components/Hero'
+import { Features } from './components/Features'
+import { Scanner } from './components/Scanner'
+import { TechSpecs } from './components/TechSpecs'
+import { Footer } from './components/Footer'
 
 function App() {
-  const [url, setUrl] = useState("");
-  const [result, setResult] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-
-  const handleScan = async () => {
-    setLoading(true);
-    try {
-      const data = await scanWebsite(url);
-      setResult(data);
-    } catch (err) {
-      alert("Scan failed");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <div>
-      <h1>Security Scanner</h1>
-
-      <input
-        type="text"
-        placeholder="https://example.com"
-        value={url}
-        onChange={(e) => setUrl(e.target.value)}
-      />
-
-      <button onClick={handleScan} disabled={loading}>
-        {loading ? "Scanning..." : "Scan"}
-      </button>
-
-      {result && (
-        <pre>{JSON.stringify(result, null, 2)}</pre>
-      )}
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      <Hero />
+      <Scanner />
+      <Features />
+      <TechSpecs />
+      <Footer />
     </div>
-  );
+  )
 }
 
-export default App;
+export default App
