@@ -44,3 +44,5 @@ CVSS_LEVELS = {
     "CRITICAL": (9.0, 10.0),
 }
 
+NMAP_ENABLED = True
+

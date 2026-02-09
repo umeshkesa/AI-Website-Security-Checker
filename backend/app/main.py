@@ -16,7 +16,7 @@ from app.services.header_service import check_security_headers
 from app.services.tech_service import detect_technology
 from app.services.severity_service import calculate_overall_severity
 from app.routes.scan import router as scan_router
-from app.services.ai_recommendation_service import generate_ai_recommendations
+#from app.services.ai_recommendation_service import generate_ai_recommendations
 from app.config import AI_RECOMMENDATIONS_ENABLED
 
 

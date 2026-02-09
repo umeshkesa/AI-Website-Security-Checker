@@ -1,7 +1,9 @@
+
 # backend/app/services/severity_service.py
 
 SEVERITY_ORDER = {
     "INFO": 0,
+    "UNKNOWN": 0,
     "LOW": 1,
     "MEDIUM": 2,
     "HIGH": 3,
@@ -12,39 +14,51 @@ SEVERITY_ORDER = {
 def calculate_overall_severity(results: list) -> dict:
     """
     Aggregates all scan results and determines final severity
+    (GROUPED, CLEAN, REAL-WORLD STYLE)
     """
 
     max_severity = "INFO"
     reasons = []
+    risk_score = 0
 
     for result in results:
         if not isinstance(result, dict):
             continue
 
-        # 1️⃣ Aggregate severity
+        # 1️⃣ Direct issues (SSL, headers, etc.)
+        issue = result.get("issue")
         severity = result.get("severity")
-        if isinstance(severity, str):
-            severity = severity.upper()
+
         if severity:
             max_severity = _max_severity(max_severity, severity)
 
-        # 2️⃣ Prefer human-readable issue text
-        issue = result.get("issue")
         if issue:
             reasons.append(issue)
+            risk_score += 15
 
-        # 3️⃣ Vulnerability aggregation
+        # 2️⃣ Vulnerability aggregation (GROUPED)
         if "vulnerabilities" in result:
-            vuln_severity, vuln_reasons = _analyze_vulnerabilities(
+            vuln_sev, vuln_reasons, vuln_score = _analyze_vulnerabilities(
                 result["vulnerabilities"]
             )
-            max_severity = _max_severity(max_severity, vuln_severity)
+            max_severity = _max_severity(max_severity, vuln_sev)
             reasons.extend(vuln_reasons)
+            risk_score += vuln_score
+        
+        # Nmap risk handling
+        if result.get("service") == "nmap":
+          open_ports = result.get("open_ports", [])
+          if open_ports:
+            max_severity = _max_severity(max_severity, "HIGH")
+            reasons.append(
+            f"{len(open_ports)} open network ports detected"
+           )
+
 
     return {
         "severity": max_severity,
-        "risk_score": SEVERITY_ORDER[max_severity] * 25,
-        "reasons": list(dict.fromkeys(reasons))  # preserve order, remove dups
+        "risk_score": min(100, risk_score),
+        "reasons": reasons
     }
 
 
@@ -54,29 +68,56 @@ def calculate_overall_severity(results: list) -> dict:
 
 def _analyze_vulnerabilities(vulnerabilities: list):
     """
-    Determines severity based on CVEs
+    GROUP vulnerabilities per technology instead of per CVE
     """
     highest = "INFO"
     reasons = []
+    score = 0
 
     for item in vulnerabilities:
-        # Skip failed / error-only entries
-        if "vulnerabilities" not in item:
+        vulns = item.get("vulnerabilities")
+        if not vulns:
             continue
 
         tech = item.get("technology", "Unknown")
+        version = item.get("version") or "unknown"
 
-        for vuln in item.get("vulnerabilities", []):
-            sev = vuln.get("severity", "INFO")
-            highest = _max_severity(highest, sev)
+        counts = {
+            "CRITICAL": 0,
+            "HIGH": 0,
+            "MEDIUM": 0,
+            "LOW": 0,
+            "UNKNOWN": 0
+        }
 
-            cve_id = vuln.get("id")
-            if cve_id:
-                reasons.append(
-                    f"{tech} affected by {cve_id} ({sev})"
-                )
+        tech_max = "INFO"
 
-    return highest, reasons
+        for vuln in vulns:
+            sev = vuln.get("severity", "UNKNOWN")
+            counts[sev] += 1
+            tech_max = _max_severity(tech_max, sev)
+
+        # Update global severity
+        highest = _max_severity(highest, tech_max)
+
+        # ONE clean reason per technology
+        reasons.append(
+            f"{tech} ({version}) has known vulnerabilities "
+            f"({counts['CRITICAL']} CRITICAL, "
+            f"{counts['HIGH']} HIGH, "
+            f"{counts['MEDIUM']} MEDIUM)"
+        )
+
+        # Score per technology (not per CVE)
+        score += {
+            "CRITICAL": 25,
+            "HIGH": 20,
+            "MEDIUM": 10,
+            "LOW": 5,
+            "UNKNOWN": 2
+        }.get(tech_max, 0)
+
+    return highest, reasons, score
 
 
 def _max_severity(current: str, new: str) -> str:
@@ -86,3 +127,4 @@ def _max_severity(current: str, new: str) -> str:
     if SEVERITY_ORDER.get(new, 0) > SEVERITY_ORDER.get(current, 0):
         return new
     return current
+
